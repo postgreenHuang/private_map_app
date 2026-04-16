@@ -96,6 +96,17 @@ body {
 }
 .sidebar__toggle span { display: block; width: 18px; height: 2px; background: var(--color-text); border-radius: 1px; }
 .sidebar__toggle:active { background: var(--color-bg-light); }
+.sidebar__resize-handle {
+  position: absolute; top: 0; right: -12px; width: 24px; height: 100%;
+  cursor: ew-resize; z-index: 101;
+}
+.sidebar__resize-handle::after {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px; height: 32px; border-radius: 2px;
+  background: rgba(0,0,0,0.15); transition: background 0.2s;
+}
+.sidebar__resize-handle:active::after { background: rgba(0,0,0,0.3); }
 
 /* ========== 分类筛选栏 ========== */
 .category-filter {
@@ -572,6 +583,17 @@ body.sidebar-open .search { left: calc(var(--sidebar-width) + 16px); }
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 0 8px;
 }
+.track-visibility-bar { display: flex; gap: 8px; margin-bottom: 8px; }
+.track-visibility-btn {
+  width: 28px; height: 28px; border: none; background: none;
+  color: var(--color-text-secondary); cursor: pointer;
+  border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.track-visibility-btn--active { color: var(--color-primary); }
+.track-visibility-btn:active { background: rgba(0,0,0,0.06); }
+}
 .track-editing__hint {
   font-size: 13px; color: var(--color-text-secondary);
 }
@@ -695,6 +717,7 @@ body.sidebar-open .search { left: calc(var(--sidebar-width) + 16px); }
 @media (max-width: 767px) {
   /* 侧边栏：保持左侧，收窄宽度，半透明 */
   .sidebar { width: 70vw; max-width: 280px; background: rgba(255,255,255,0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  .sidebar__resize-handle::after { width: 3px; height: 24px; background: rgba(0,0,0,0.1); }
   .marker-card, .track-card { background: rgba(255,255,255,0.75); }
   .category-modal__list { background: transparent; }
 
@@ -719,12 +742,6 @@ body.sidebar-open .search { left: calc(var(--sidebar-width) + 16px); }
   .link-add-row { flex-wrap: wrap; }
   .link-add-row .form-input--sm { max-width: none; width: 100%; }
 
-  /* 上下文菜单底部居中 */
-  .context-menu {
-    left: 50% !important;
-    bottom: 32px;
-    top: auto !important;
-    transform: translateX(-50%);
-    min-width: 200px;
-  }
+  /* 上下文菜单：出现在长按位置附近 */
+  .context-menu { min-width: 160px; }
 }

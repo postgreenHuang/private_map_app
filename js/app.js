@@ -42,11 +42,20 @@ async function init() {
     });
 
     // 右键菜单 → 添加标记
+    const hideContextMenu = () => document.getElementById('context-menu').classList.add('hidden');
     MapModule.setClickListener((lnglat, pixel) => {
       _contextPosition = lnglat;
       const menu = document.getElementById('context-menu');
-      menu.style.left = pixel.x + 'px';
-      menu.style.top = pixel.y + 'px';
+      // 菜单出现在点击位置附近，不超出屏幕
+      const mw = 160, mh = 44;
+      let x = pixel.x + 8, y = pixel.y - mh / 2;
+      if (x + mw > window.innerWidth) x = pixel.x - mw - 8;
+      if (y < 8) y = 8;
+      if (y + mh > window.innerHeight - 8) y = window.innerHeight - mh - 8;
+      menu.style.left = x + 'px';
+      menu.style.top = y + 'px';
+      menu.style.bottom = '';
+      menu.style.transform = '';
       menu.classList.remove('hidden');
     });
 
@@ -55,7 +64,7 @@ async function init() {
     document.getElementById('map').style.cssText += '-webkit-touch-callout:none; -webkit-user-select:none;';
 
     document.getElementById('ctx-add-marker').addEventListener('click', () => {
-      document.getElementById('context-menu').classList.add('hidden');
+      hideContextMenu();
       if (TrackModule.isInserting()) {
         const { trackId, insertIndex } = TrackModule.getInsertTarget();
         if (_contextPosition) TrackModule.insertWaypoint(trackId, insertIndex, _contextPosition.lng, _contextPosition.lat);
@@ -66,9 +75,8 @@ async function init() {
       }
     });
 
-    document.addEventListener('click', () => {
-      document.getElementById('context-menu').classList.add('hidden');
-    });
+    document.addEventListener('click', hideContextMenu);
+    document.addEventListener('touchstart', hideContextMenu, { passive: true });
 
     // 标记表单
     document.getElementById('marker-form').addEventListener('submit', e => {
@@ -119,6 +127,44 @@ async function init() {
       document.body.classList.remove('sidebar-open');
     });
 
+    // 侧边栏拖拽调整宽度
+    const resizeHandle = document.getElementById('sidebar-resize-handle');
+    const SIDEBAR_MIN = 200, SIDEBAR_MAX = 500;
+    const savedWidth = localStorage.getItem('private_map_sidebar_width');
+    if (savedWidth) sidebar.style.width = Math.min(Math.max(parseInt(savedWidth), SIDEBAR_MIN), SIDEBAR_MAX) + 'px';
+
+    let resizing = false;
+    const onResizeStart = (e) => {
+      resizing = true;
+      document.body.style.userSelect = 'none';
+      document.body.style.webkitUserSelect = 'none';
+    };
+    const onResizeMove = (e) => {
+      if (!resizing) return;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const rect = sidebar.getBoundingClientRect();
+      const newWidth = clientX - rect.left;
+      if (newWidth >= SIDEBAR_MIN && newWidth <= SIDEBAR_MAX) {
+        sidebar.style.width = newWidth + 'px';
+      }
+    };
+    const onResizeEnd = () => {
+      if (!resizing) return;
+      resizing = false;
+      document.body.style.userSelect = '';
+      document.body.style.webkitUserSelect = '';
+      const w = parseInt(sidebar.style.width);
+      if (w >= SIDEBAR_MIN && w <= SIDEBAR_MAX) {
+        localStorage.setItem('private_map_sidebar_width', w);
+      }
+    };
+    resizeHandle.addEventListener('mousedown', onResizeStart);
+    resizeHandle.addEventListener('touchstart', onResizeStart, { passive: true });
+    document.addEventListener('mousemove', onResizeMove);
+    document.addEventListener('touchmove', onResizeMove, { passive: true });
+    document.addEventListener('mouseup', onResizeEnd);
+    document.addEventListener('touchend', onResizeEnd);
+
     // 移动端：左滑收起侧边栏
     const sidebar = document.getElementById('sidebar');
     let touchStartX = 0;
@@ -165,6 +211,8 @@ async function init() {
     document.getElementById('track-create-btn').addEventListener('click', () => TrackModule.startEditing());
     document.getElementById('track-cancel-btn').addEventListener('click', () => TrackModule.cancelEditing());
     document.getElementById('track-finish-btn').addEventListener('click', () => TrackModule.finishEditing());
+    document.getElementById('track-show-all').addEventListener('click', () => TrackModule.showAllTracks());
+    document.getElementById('track-hide-all').addEventListener('click', () => TrackModule.hideAllTracks());
 
     // 分类管理（根据当前 Tab 打开对应分类弹窗）
     document.getElementById('category-manage-btn').addEventListener('click', () => {

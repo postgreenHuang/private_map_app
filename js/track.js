@@ -212,6 +212,27 @@ export const TrackModule = {
     this.renderSavedTracks();
   },
 
+  // ========== 轨迹显示/隐藏 ==========
+
+  isTrackVisible(id) {
+    return _savedOverlays.some(o => o.id === id);
+  },
+
+  showAllTracks() {
+    const tracks = Storage.getTracks();
+    tracks.forEach(t => {
+      if (!this.isTrackVisible(t.id)) {
+        this.showTrack(t.id, t.routeMode);
+      }
+    });
+    this.renderSavedTracks();
+  },
+
+  hideAllTracks() {
+    [..._savedOverlays].forEach(o => this.hideTrack(o.id));
+    this.renderSavedTracks();
+  },
+
   // ========== 制作模式 ==========
 
   startEditing() {
@@ -284,6 +305,7 @@ export const TrackModule = {
 
   renderSavedTracks() {
     const container = document.getElementById('track-list');
+    const visBar = document.getElementById('track-visibility-bar');
     if (!container) return;
     let tracks = Storage.getTracks();
 
@@ -292,16 +314,22 @@ export const TrackModule = {
       return !this.isCategoryHidden(t.categoryId);
     });
 
+    if (visBar) visBar.style.display = tracks.length > 0 ? 'flex' : 'none';
+
     if (tracks.length === 0) {
       container.innerHTML = '';
       return;
     }
+
+    const EYE_OPEN = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    const EYE_CLOSED = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
 
     container.innerHTML = tracks
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .map(t => {
         const mode = t.routeMode || 'driving';
         const isExpanded = _expandedTrackId === t.id;
+        const isVisible = this.isTrackVisible(t.id);
         const wpHtml = isExpanded ? this._buildTrackWaypointHtml(t) : '';
         const cat = t.categoryId ? this.getCategoryById(t.categoryId) : null;
         const catMeta = cat ? `<span style="color:${cat.color};margin-right:4px">${cat.emoji}</span>${escapeHtml(cat.name)}` : '未分类';
@@ -314,9 +342,10 @@ export const TrackModule = {
               <div class="track-card__meta">${t.waypoints.length} 个途径点 · ${catMeta}</div>
             </div>
             <div class="track-card__actions">
+              <button class="track-visibility-btn ${isVisible ? 'track-visibility-btn--active' : ''}" data-track-vis="${t.id}" title="${isVisible ? '隐藏轨迹' : '显示轨迹'}">${isVisible ? EYE_OPEN : EYE_CLOSED}</button>
               <div class="track-mode-group">
-                <button class="track-mode-btn ${mode === 'driving' ? 'track-mode-btn--active' : ''}" data-track-show="${t.id}" data-mode="driving" title="导航路线">导航</button>
-                <button class="track-mode-btn ${mode === 'straight' ? 'track-mode-btn--active' : ''}" data-track-show="${t.id}" data-mode="straight" title="直线连接">直线</button>
+                <button class="track-mode-btn ${isVisible && mode === 'driving' ? 'track-mode-btn--active' : ''}" data-track-show="${t.id}" data-mode="driving" title="导航路线">导航</button>
+                <button class="track-mode-btn ${isVisible && mode === 'straight' ? 'track-mode-btn--active' : ''}" data-track-show="${t.id}" data-mode="straight" title="直线连接">直线</button>
               </div>
               <div class="track-card__menu-wrap">
                 <button class="track-card__menu-btn" data-track-menu="${t.id}" title="更多">···</button>
@@ -342,19 +371,43 @@ export const TrackModule = {
       });
     });
 
-    // 模式切换
+    // 模式切换（点击已激活的模式按钮则隐藏）
     container.querySelectorAll('.track-mode-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const id = btn.dataset.trackShow;
         const mode = btn.dataset.mode;
+        const isActive = btn.classList.contains('track-mode-btn--active');
+        if (isActive) {
+          this.hideTrack(id);
+          this.renderSavedTracks();
+          return;
+        }
         const allTracks = Storage.getTracks();
         const track = allTracks.find(t => t.id === id);
         if (track) { track.routeMode = mode; Storage.saveTrack(track); }
         document.querySelectorAll(`.track-mode-btn[data-track-show="${id}"]`).forEach(b => {
           b.classList.toggle('track-mode-btn--active', b.dataset.mode === mode);
         });
+        // 更新可见性按钮
+        const visBtn = container.querySelector(`[data-track-vis="${id}"]`);
+        if (visBtn) { visBtn.innerHTML = EYE_OPEN; visBtn.classList.add('track-visibility-btn--active'); }
         this.showTrack(id, mode);
+      });
+    });
+
+    // 可见性切换（眼睛按钮）
+    container.querySelectorAll('[data-track-vis]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.trackVis;
+        if (this.isTrackVisible(id)) {
+          this.hideTrack(id);
+        } else {
+          const track = Storage.getTracks().find(t => t.id === id);
+          this.showTrack(id, track?.routeMode);
+        }
+        this.renderSavedTracks();
       });
     });
 
