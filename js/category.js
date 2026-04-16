@@ -310,12 +310,6 @@ export const CategoryModule = {
     if (!bar) return;
     const categories = this.getCategories();
 
-    if (categories.length === 0) {
-      bar.classList.add('hidden');
-      bar.innerHTML = '';
-      return;
-    }
-
     bar.innerHTML = `
       <select class="filter-select">
         <option value="">全部分类</option>
