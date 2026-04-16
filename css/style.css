@@ -488,6 +488,7 @@ body.sidebar-open .search { left: calc(var(--sidebar-width) + 16px); }
   overflow: hidden;
 }
 .track-card__header {
+  flex-wrap: wrap;
   display: flex; align-items: center;
   padding: 14px; gap: 12px;
 }
@@ -496,10 +497,13 @@ body.sidebar-open .search { left: calc(var(--sidebar-width) + 16px); }
 .track-card__name {
   font-size: 16px; font-weight: 600;
   letter-spacing: -0.2px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: normal; word-break: break-word;
 }
 .track-card__meta { font-size: 13px; color: var(--color-text-secondary); margin-top: 2px; }
-.track-card__actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.track-card__actions {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+  margin-top: 10px; padding-left: 32px;
+}
 .track-mode-group {
   display: flex; border-radius: 6px; overflow: hidden;
   border: 1px solid var(--color-separator);
