@@ -831,7 +831,9 @@ export const TrackModule = {
   _updateContextMenu() {
     const item = document.getElementById('ctx-add-marker');
     if (!item) return;
-    item.textContent = (this.isEditing() || this.isInserting()) ? '添加途径点' : '在此添加标记';
+    const isTrackMode = this.isEditing() || this.isInserting();
+    item.textContent = isTrackMode ? '添加途径点' : '在此添加标记';
+    item.classList.toggle('context-menu__item--waypoint', isTrackMode);
   },
 
   // ========== 初始化 ==========
