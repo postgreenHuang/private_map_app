@@ -38,11 +38,56 @@ export const MapModule = {
   },
 
   setClickListener(callback) {
+    // PC 端：右键菜单
     this.map.on('rightclick', (e) => {
       callback(
         { lng: e.lnglat.getLng(), lat: e.lnglat.getLat() },
         { x: e.pixel.getX(), y: e.pixel.getY() }
       );
+    });
+
+    // 移动端：长按模拟右键
+    this._setupLongPress(callback);
+  },
+
+  _setupLongPress(callback) {
+    const mapEl = this.map.getContainer();
+    let timer = null;
+    let startX = 0, startY = 0;
+
+    mapEl.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      startX = touch.clientX;
+      startY = touch.clientY;
+      timer = setTimeout(() => {
+        const rect = mapEl.getBoundingClientRect();
+        const pixel = new this.AMap.Pixel(
+          touch.clientX - rect.left,
+          touch.clientY - rect.top
+        );
+        const lnglat = this.map.containerToLngLat(pixel);
+        if (lnglat) {
+          callback(
+            { lng: lnglat.getLng(), lat: lnglat.getLat() },
+            { x: touch.clientX, y: touch.clientY }
+          );
+        }
+        timer = null;
+      }, 500);
+    }, { passive: true });
+
+    mapEl.addEventListener('touchmove', (e) => {
+      if (!timer || e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      if (Math.abs(touch.clientX - startX) > 10 || Math.abs(touch.clientY - startY) > 10) {
+        clearTimeout(timer);
+        timer = null;
+      }
+    }, { passive: true });
+
+    mapEl.addEventListener('touchend', () => {
+      if (timer) { clearTimeout(timer); timer = null; }
     });
   },
 

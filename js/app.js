@@ -51,6 +51,8 @@ async function init() {
     });
 
     document.getElementById('map').addEventListener('contextmenu', e => e.preventDefault());
+    // 移动端：阻止长按弹出系统菜单
+    document.getElementById('map').style.cssText += '-webkit-touch-callout:none; -webkit-user-select:none;';
 
     document.getElementById('ctx-add-marker').addEventListener('click', () => {
       document.getElementById('context-menu').classList.add('hidden');
