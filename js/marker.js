@@ -86,16 +86,21 @@ export const MarkerModule = {
   applyFilter() {
     const markers = Storage.getMarkers();
     const catFilter = CategoryModule.getSelectedFilter();
+    const hideAll = catFilter === '__none__';
     markers.forEach(m => {
       const entry = _mapMarkers[m.id];
       if (!entry) return;
-      const nm = normalizeMarker(m);
-      const catHidden = catFilter && nm.categoryId !== catFilter;
-      const cityHidden = _cityFilter && nm.city !== _cityFilter;
-      if (catHidden || cityHidden) {
+      if (hideAll) {
         entry.amapMarker.hide();
       } else {
-        entry.amapMarker.show();
+        const nm = normalizeMarker(m);
+        const catHidden = catFilter && nm.categoryId !== catFilter;
+        const cityHidden = _cityFilter && nm.city !== _cityFilter;
+        if (catHidden || cityHidden) {
+          entry.amapMarker.hide();
+        } else {
+          entry.amapMarker.show();
+        }
       }
     });
     this.renderList();
@@ -277,6 +282,7 @@ export const MarkerModule = {
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .filter(m => {
         const catFilter = CategoryModule.getSelectedFilter();
+        if (catFilter === '__none__') return false;
         if (catFilter && m.categoryId !== catFilter) return false;
         if (_cityFilter && m.city !== _cityFilter) return false;
         return true;

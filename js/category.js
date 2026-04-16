@@ -319,6 +319,7 @@ export const CategoryModule = {
     bar.innerHTML = `
       <select class="filter-select">
         <option value="">全部分类</option>
+        <option value="__none__"${_selectedFilter === '__none__' ? ' selected' : ''}>无（隐藏全部）</option>
         ${categories.map(c =>
           `<option value="${c.id}"${_selectedFilter === c.id ? ' selected' : ''}>${c.emoji} ${escapeHtml(c.name)}</option>`
         ).join('')}

@@ -174,23 +174,36 @@ export const CloudSync = {
   startRealtime(callbacks) {
     if (!_client) return;
 
-    const sub = (table, pullFn, cb) => {
-      _client.channel(`${table}-changes`)
-        .on('postgres_changes', { event: '*', schema: 'public', table }, async () => {
-          await pullFn();
-          cb?.();
-        })
-        .subscribe();
-    };
+    try {
+      const sub = (table, pullFn, cb) => {
+        _client.channel(`${table}-changes`)
+          .on('postgres_changes', { event: '*', schema: 'public', table }, async () => {
+            try {
+              await pullFn();
+              cb?.();
+            } catch (e) {
+              console.warn(`[Cloud] Realtime ${table} 处理失败:`, e);
+            }
+          })
+          .subscribe((status, err) => {
+            if (status === 'SUBSCRIBED') return;
+            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              console.warn(`[Cloud] Realtime ${table} 连接失败:`, err);
+            }
+          });
+      };
 
-    sub('markers', () => this._pullTable('markers', toLocalMarker, 'private_map_markers'),
-      () => callbacks.onMarkersChange?.());
-    sub('marker_categories', () => this._pullSimpleTable('marker_categories', 'private_map_categories'),
-      () => callbacks.onCategoriesChange?.());
-    sub('track_categories', () => this._pullSimpleTable('track_categories', 'private_map_track_categories'),
-      () => callbacks.onTrackCategoriesChange?.());
-    sub('tracks', () => this._pullTable('tracks', toLocalTrack, 'private_map_tracks'),
-      () => callbacks.onTracksChange?.());
+      sub('markers', () => this._pullTable('markers', toLocalMarker, 'private_map_markers'),
+        () => callbacks.onMarkersChange?.());
+      sub('marker_categories', () => this._pullSimpleTable('marker_categories', 'private_map_categories'),
+        () => callbacks.onCategoriesChange?.());
+      sub('track_categories', () => this._pullSimpleTable('track_categories', 'private_map_track_categories'),
+        () => callbacks.onTrackCategoriesChange?.());
+      sub('tracks', () => this._pullTable('tracks', toLocalTrack, 'private_map_tracks'),
+        () => callbacks.onTracksChange?.());
+    } catch (e) {
+      console.warn('[Cloud] Realtime 初始化失败（不影响基础同步）:', e);
+    }
   },
 
   // ===== 单表拉取辅助 =====
