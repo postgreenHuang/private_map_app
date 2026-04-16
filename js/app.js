@@ -128,6 +128,7 @@ async function init() {
     });
 
     // 侧边栏拖拽调整宽度
+    const sidebar = document.getElementById('sidebar');
     const resizeHandle = document.getElementById('sidebar-resize-handle');
     const SIDEBAR_MIN = 200, SIDEBAR_MAX = 500;
     const savedWidth = localStorage.getItem('private_map_sidebar_width');
@@ -166,7 +167,6 @@ async function init() {
     document.addEventListener('touchend', onResizeEnd);
 
     // 移动端：左滑收起侧边栏
-    const sidebar = document.getElementById('sidebar');
     let touchStartX = 0;
     let touchStartY = 0;
     let swiping = false;
