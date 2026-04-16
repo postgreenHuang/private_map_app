@@ -694,7 +694,9 @@ body.sidebar-open .search { left: calc(var(--sidebar-width) + 16px); }
 
 @media (max-width: 767px) {
   /* 侧边栏：保持左侧，收窄宽度，半透明 */
-  .sidebar { width: 70vw; max-width: 280px; background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  .sidebar { width: 70vw; max-width: 280px; background: rgba(255,255,255,0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  .marker-card, .track-card { background: rgba(255,255,255,0.75); }
+  .category-modal__list { background: transparent; }
 
   .sidebar__toggle { top: 12px; left: 12px; width: 36px; height: 36px; }
   .sidebar__toggle span { width: 16px; }
