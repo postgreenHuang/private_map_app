@@ -70,10 +70,10 @@ export const CloudSync = {
   async pullAll() {
     if (!_client) return;
     try {
-      // 先把本地数据推上去，防止新增数据丢失
+      // 先把本地数据推上去
       await this.pushAllLocal();
 
-      // 再从云端拉取（合并后的最新数据）
+      // 从云端拉取，与本地合并（只添加云端独有的，不覆盖本地已有的）
       const [catRes, mkRes, tcRes, trRes] = await Promise.all([
         _client.from('marker_categories').select('*'),
         _client.from('markers').select('*'),
@@ -81,20 +81,23 @@ export const CloudSync = {
         _client.from('tracks').select('*')
       ]);
 
-      if (catRes.data?.length) {
-        localStorage.setItem('private_map_categories', JSON.stringify(catRes.data));
-      }
-      if (mkRes.data?.length) {
-        localStorage.setItem('private_map_markers', JSON.stringify(mkRes.data.map(toLocalMarker)));
-      }
-      if (tcRes.data?.length) {
-        localStorage.setItem('private_map_track_categories', JSON.stringify(tcRes.data));
-      }
-      if (trRes.data?.length) {
-        localStorage.setItem('private_map_tracks', JSON.stringify(trRes.data.map(toLocalTrack)));
-      }
+      this._mergeToLocal('private_map_categories', catRes.data || []);
+      this._mergeToLocal('private_map_markers', (mkRes.data || []).map(toLocalMarker));
+      this._mergeToLocal('private_map_track_categories', tcRes.data || []);
+      this._mergeToLocal('private_map_tracks', (trRes.data || []).map(toLocalTrack));
+
+      console.log('[Cloud] 数据同步完成');
     } catch (e) {
-      console.warn('[Cloud] 同步失败:', e);
+      console.warn('[Cloud] 同步失败，使用本地数据:', e);
+    }
+  },
+
+  _mergeToLocal(key, cloudItems) {
+    const localItems = JSON.parse(localStorage.getItem(key) || '[]');
+    const localIds = new Set(localItems.map(i => i.id));
+    const newFromCloud = cloudItems.filter(i => !localIds.has(i.id));
+    if (newFromCloud.length > 0) {
+      localStorage.setItem(key, JSON.stringify([...localItems, ...newFromCloud]));
     }
   },
 
