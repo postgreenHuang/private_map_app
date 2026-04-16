@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="icon" href="data:,">
+  <title>私人地图标记工具</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 地图容器 -->
+  <div id="map"></div>
+
+  <!-- 搜索栏 -->
+  <div class="search">
+    <input type="text" id="search-input" class="search__input" placeholder="搜索地点" autocomplete="off">
+    <div id="search-results" class="search__results hidden"></div>
+  </div>
+
+  <!-- 侧边栏切换按钮 -->
+  <button id="sidebar-toggle" class="sidebar__toggle" aria-label="打开标记列表">
+    <span></span><span></span><span></span>
+  </button>
+
+  <!-- 侧边栏 -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar__header">
+      <div class="sidebar__tabs">
+        <button class="sidebar__tab sidebar__tab--active" data-tab="markers">标记</button>
+        <button class="sidebar__tab" data-tab="tracks">轨迹</button>
+      </div>
+      <div class="sidebar__header-actions">
+        <button id="category-manage-btn" class="btn btn--small btn--secondary" title="管理分类">添加分类</button>
+        <button id="sidebar-close" class="sidebar__close" aria-label="关闭标记列表">&times;</button>
+      </div>
+    </div>
+    <!-- 分类筛选栏 -->
+    <div id="city-filter" class="category-filter hidden"></div>
+    <div id="category-filter" class="category-filter hidden"></div>
+    <div id="track-category-filter" class="category-filter hidden"></div>
+    <!-- 标记面板 -->
+    <div id="markers-panel" class="sidebar__list"></div>
+    <!-- 轨迹面板 -->
+    <div id="tracks-panel" class="sidebar__list sidebar__panel--hidden">
+      <div id="track-editing-area" class="hidden">
+        <div class="track-editing__header">
+          <span class="track-editing__hint">右键地图添加途径点</span>
+          <div class="track-editing__actions">
+            <button id="track-cancel-btn" class="btn btn--small btn--secondary">取消</button>
+            <button id="track-finish-btn" class="btn btn--small btn--primary">完成制作</button>
+          </div>
+        </div>
+        <div id="waypoint-list" class="waypoint-list"></div>
+      </div>
+      <div id="track-saved-area">
+        <button id="track-create-btn" class="btn btn--primary btn--full" style="margin-bottom:12px">制作轨迹</button>
+        <div id="track-list"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 标记表单弹窗 -->
+  <div id="marker-form-overlay" class="marker-form-overlay hidden">
+    <div class="marker-form">
+      <h2 id="marker-form-title" class="marker-form__title">添加标记</h2>
+      <form id="marker-form" class="marker-form__body">
+        <input type="hidden" id="marker-id">
+
+        <!-- 名称 -->
+        <div class="form-group">
+          <label for="marker-name" class="form-label">名称</label>
+          <input type="text" id="marker-name" class="form-input" placeholder="输入地点名称" required>
+        </div>
+
+        <!-- 分类 -->
+        <div class="form-group">
+          <label for="marker-category" class="form-label">分类</label>
+          <select id="marker-category" class="form-select">
+            <option value="">未分类</option>
+          </select>
+        </div>
+
+        <!-- 种草链接 -->
+        <div class="form-group">
+          <label class="form-label">种草链接</label>
+          <div id="marker-links" class="links-container"></div>
+          <div class="link-add-row">
+            <input type="text" id="link-name" class="form-input form-input--sm" placeholder="链接名称">
+            <input type="text" id="link-url" class="form-input" placeholder="https://...">
+            <button type="button" id="link-add-btn" class="btn btn--secondary btn--small">添加</button>
+          </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="marker-form__actions">
+          <button type="button" id="marker-form-cancel" class="btn btn--secondary">取消</button>
+          <button type="button" id="marker-delete" class="btn btn--danger hidden">删除</button>
+          <button type="submit" class="btn btn--primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 分类管理弹窗 -->
+  <div id="category-modal-overlay" class="marker-form-overlay hidden">
+    <div class="category-modal">
+      <div class="category-modal__header">
+        <h2 class="category-modal__title">管理分类</h2>
+        <button id="category-modal-close" class="sidebar__close">&times;</button>
+      </div>
+      <div id="category-list" class="category-modal__list"></div>
+      <div id="category-form-area" class="category-modal__form hidden">
+        <div class="form-group">
+          <label class="form-label">图标</label>
+          <div class="emoji-picker-wrap">
+            <div class="emoji-picker" id="cat-emoji-picker"></div>
+          </div>
+          <input type="text" id="cat-emoji-custom" class="emoji-picker__custom" placeholder="输入自定义 emoji">
+        </div>
+        <div class="form-group">
+          <label for="cat-name" class="form-label">名称</label>
+          <input type="text" id="cat-name" class="form-input" placeholder="分类名称">
+        </div>
+        <div class="form-group">
+          <label class="form-label">颜色</label>
+          <div class="color-picker" id="cat-color-picker"></div>
+        </div>
+        <div class="marker-form__actions">
+          <button type="button" id="cat-form-cancel" class="btn btn--secondary">取消</button>
+          <button type="button" id="cat-form-save" class="btn btn--primary">保存</button>
+        </div>
+      </div>
+      <div class="category-modal__footer">
+        <button type="button" id="cat-add-btn" class="btn btn--primary btn--full">新建分类</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 轨迹分类管理弹窗 -->
+  <div id="tc-modal-overlay" class="marker-form-overlay hidden">
+    <div class="category-modal">
+      <div class="category-modal__header">
+        <h2 class="category-modal__title">管理轨迹分类</h2>
+        <button id="tc-modal-close" class="sidebar__close">&times;</button>
+      </div>
+      <div id="tc-category-list" class="category-modal__list"></div>
+      <div id="tc-form-area" class="category-modal__form hidden">
+        <div class="form-group">
+          <label class="form-label">图标</label>
+          <div class="emoji-picker-wrap">
+            <div class="emoji-picker" id="tc-emoji-picker"></div>
+          </div>
+          <input type="text" id="tc-emoji-custom" class="emoji-picker__custom" placeholder="输入自定义 emoji">
+        </div>
+        <div class="form-group">
+          <label for="tc-name" class="form-label">名称</label>
+          <input type="text" id="tc-name" class="form-input" placeholder="分类名称">
+        </div>
+        <div class="form-group">
+          <label class="form-label">颜色</label>
+          <div class="color-picker" id="tc-color-picker"></div>
+        </div>
+        <div class="marker-form__actions">
+          <button type="button" id="tc-form-cancel" class="btn btn--secondary">取消</button>
+          <button type="button" id="tc-form-save" class="btn btn--primary">保存</button>
+        </div>
+      </div>
+      <div class="category-modal__footer">
+        <button type="button" id="tc-add-btn" class="btn btn--primary btn--full">新建分类</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右键菜单 -->
+  <div id="context-menu" class="context-menu hidden">
+    <button class="context-menu__item" id="ctx-add-marker">在此添加标记</button>
+  </div>
+
+  <!-- 提示消息 -->
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script>
+    window._AMapSecurityConfig = { securityJsCode: '' };
+  </script>
+  <script src="https://webapi.amap.com/loader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

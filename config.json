@@ -1,0 +1,22 @@
+{
+  "amap": {
+    "js_api_key": "36c30f37874ed6428e3fccc1bb9c1cf4",
+    "security_code": "81e8d5057ebeebd3c550e45d9528c42",
+    "web_api_key": "988f418fc87cc2e041a310cc59d9d04a"
+  },
+
+  "github": {
+    "username": "postgreenHuang",
+    "repo": "private_map_app"
+  },
+
+  "supabase": {
+    "url": "https://wuqbmriyyslnjsajoqrg.supabase.co",
+    "anon_key": "sb_publishable_fmjMN_Q26sb9Eg53L0FSpA_evira4bF"
+  },
+
+  "deploy": {
+    "platform": "github_pages",
+    "url": ""
+  }
+}

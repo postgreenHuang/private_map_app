@@ -1,0 +1,36 @@
+{
+  "_说明": "将此文件重命名为 config.json 并填入你的真实信息，不要将包含密钥的 config.json 提交到 Git",
+
+  "amap": {
+    "js_api_key": "在此填入高德 JS API Key（Web端）",
+    "security_code": "在此填入高德安全密钥（securityJsCode）",
+    "web_api_key": "可选，填入高德 Web服务 Key 可用 fetch 搜索；不填则 fallback 到 JSONP 插件（有 MIME 警告但可用）",
+    "_js_api_key_获取方式": "高德开放平台 → 应用管理 → 你的应用 → 添加 Key → 服务平台选「Web端(JS API)」",
+    "_security_code_获取方式": "创建 JS API Key 时同页生成",
+    "_web_api_key_获取方式": "高德开放平台 → 应用管理 → 你的应用 → 添加 Key → 服务平台选「Web服务」（有每日免费额度）"
+  },
+
+  "github": {
+    "username": "",
+    "repo": "private_map_app",
+    "_用途": "代码托管 + GitHub Pages 部署"
+  },
+
+  "firebase": {
+    "enabled": false,
+    "api_key": "",
+    "auth_domain": "",
+    "project_id": "",
+    "storage_bucket": "",
+    "messaging_sender_id": "",
+    "app_id": "",
+    "_说明": "第三阶段（同步版）启用，届时从 Firebase 控制台获取"
+  },
+
+  "deploy": {
+    "platform": "github_pages",
+    "_platform_可选值": ["github_pages", "vercel"],
+    "url": "",
+    "_url_说明": "部署成功后填入最终访问地址，如 https://yourname.github.io/private_map_app/"
+  }
+}
