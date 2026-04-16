@@ -693,19 +693,14 @@ body.sidebar-open .search { left: calc(var(--sidebar-width) + 16px); }
 }
 
 @media (max-width: 767px) {
-  /* 侧边栏：从右侧滑入，宽度自适应 */
-  .sidebar {
-    width: 85vw; max-width: 320px;
-    right: 0; left: auto;
-    transform: translateX(100%);
-  }
-  .sidebar--open { transform: translateX(0); }
+  /* 侧边栏：保持左侧，收窄宽度，半透明 */
+  .sidebar { width: 70vw; max-width: 280px; background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 
-  .sidebar__toggle { top: 12px; right: 12px; left: auto; width: 36px; height: 36px; }
+  .sidebar__toggle { top: 12px; left: 12px; width: 36px; height: 36px; }
   .sidebar__toggle span { width: 16px; }
 
-  .search { top: 12px; left: 12px; right: 56px; }
-  body.sidebar-open .search { left: 12px; }
+  .search { top: 12px; left: 56px; right: 12px; }
+  body.sidebar-open .search { display: none; }
   .search__input { font-size: 16px; padding: 9px 12px; }
   .search-result-item { padding: 10px 12px; }
 
@@ -722,7 +717,7 @@ body.sidebar-open .search { left: calc(var(--sidebar-width) + 16px); }
   .link-add-row { flex-wrap: wrap; }
   .link-add-row .form-input--sm { max-width: none; width: 100%; }
 
-  /* 上下文菜单居中 */
+  /* 上下文菜单底部居中 */
   .context-menu {
     left: 50% !important;
     bottom: 32px;

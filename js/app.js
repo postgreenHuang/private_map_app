@@ -119,6 +119,28 @@ async function init() {
       document.body.classList.remove('sidebar-open');
     });
 
+    // 移动端：左滑收起侧边栏
+    const sidebar = document.getElementById('sidebar');
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let swiping = false;
+    sidebar.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      swiping = false;
+    }, { passive: true });
+    sidebar.addEventListener('touchmove', (e) => {
+      const dx = e.touches[0].clientX - touchStartX;
+      const dy = e.touches[0].clientY - touchStartY;
+      if (!swiping && Math.abs(dx) > Math.abs(dy) && dx < -20) swiping = true;
+    }, { passive: true });
+    sidebar.addEventListener('touchend', (e) => {
+      if (swiping && e.changedTouches[0].clientX - touchStartX < -60) {
+        sidebar.classList.remove('sidebar--open');
+        document.body.classList.remove('sidebar-open');
+      }
+    });
+
     // 侧边栏 Tab 切换
     const tabs = document.querySelectorAll('.sidebar__tab');
     const categoryBtn = document.getElementById('category-manage-btn');
