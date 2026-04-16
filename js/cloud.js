@@ -70,15 +70,16 @@ export const CloudSync = {
   async pullAll() {
     if (!_client) return;
     try {
+      // 先把本地数据推上去，防止新增数据丢失
+      await this.pushAllLocal();
+
+      // 再从云端拉取（合并后的最新数据）
       const [catRes, mkRes, tcRes, trRes] = await Promise.all([
         _client.from('marker_categories').select('*'),
         _client.from('markers').select('*'),
         _client.from('track_categories').select('*'),
         _client.from('tracks').select('*')
       ]);
-
-      const cloudHasData = catRes.data?.length || mkRes.data?.length ||
-        tcRes.data?.length || trRes.data?.length;
 
       if (catRes.data?.length) {
         localStorage.setItem('private_map_categories', JSON.stringify(catRes.data));
@@ -92,13 +93,8 @@ export const CloudSync = {
       if (trRes.data?.length) {
         localStorage.setItem('private_map_tracks', JSON.stringify(trRes.data.map(toLocalTrack)));
       }
-
-      // 云端为空时，将本地数据推送上去
-      if (!cloudHasData) {
-        await this.pushAllLocal();
-      }
     } catch (e) {
-      console.warn('[Cloud] 拉取数据失败:', e);
+      console.warn('[Cloud] 同步失败:', e);
     }
   },
 
@@ -117,7 +113,6 @@ export const CloudSync = {
       if (tracks.length) ops.push(_client.from('tracks').upsert(tracks, { onConflict: 'id' }));
 
       if (ops.length) await Promise.all(ops);
-      console.log('[Cloud] 本地数据已上传');
     } catch (e) {
       console.warn('[Cloud] 上传本地数据失败:', e);
     }
