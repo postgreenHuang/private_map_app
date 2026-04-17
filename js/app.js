@@ -248,7 +248,7 @@ function bindAppEvents() {
   if (savedWidth) {
     const w = Math.min(Math.max(parseInt(savedWidth), SIDEBAR_MIN), SIDEBAR_MAX);
     sidebar.style.width = w + 'px';
-    sidebar.style.setProperty('--sidebar-width', w + 'px');
+    document.documentElement.style.setProperty('--sidebar-width', w + 'px');
   }
 
   let resizing = false;
@@ -264,7 +264,7 @@ function bindAppEvents() {
     const newWidth = clientX - rect.left;
     if (newWidth >= SIDEBAR_MIN && newWidth <= SIDEBAR_MAX) {
       sidebar.style.width = newWidth + 'px';
-      sidebar.style.setProperty('--sidebar-width', newWidth + 'px');
+      document.documentElement.style.setProperty('--sidebar-width', newWidth + 'px');
     }
   };
   const onResizeEnd = () => {
@@ -274,7 +274,7 @@ function bindAppEvents() {
     document.body.style.webkitUserSelect = '';
     const w = parseInt(sidebar.style.width);
     if (w >= SIDEBAR_MIN && w <= SIDEBAR_MAX) {
-      sidebar.style.setProperty('--sidebar-width', w + 'px');
+      document.documentElement.style.setProperty('--sidebar-width', w + 'px');
       localStorage.setItem('private_map_sidebar_width', w);
     }
   };
