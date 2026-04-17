@@ -468,6 +468,76 @@ export const TrackModule = {
         clone.style.right = (window.innerWidth - rect.right) + 'px';
         clone.style.zIndex = '400';
         document.body.appendChild(clone);
+
+        // 克隆元素需要重新绑定事件
+        clone.querySelectorAll('[data-track-change-cat]').forEach(b => {
+          b.addEventListener('click', async (ev) => {
+            ev.stopPropagation();
+            document.querySelectorAll('.track-card__dropdown--floating').forEach(d => d.remove());
+            const id = b.dataset.trackChangeCat;
+            const track = Storage.getTracks().find(t => t.id === id);
+            if (!track) return;
+            const categories = this.getCategories();
+            if (categories.length === 0) { showToast('请先创建轨迹分类'); return; }
+            const chosen = await this.pickCategory(track.categoryId);
+            track.categoryId = chosen;
+            Storage.saveTrack(track);
+            this.renderSavedTracks();
+            showToast('分类已更新');
+          });
+        });
+        clone.querySelectorAll('[data-track-export]').forEach(b => {
+          b.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            document.querySelectorAll('.track-card__dropdown--floating').forEach(d => d.remove());
+            const track = Storage.getTracks().find(t => t.id === b.dataset.trackExport);
+            if (!track) return;
+            const json = JSON.stringify(track, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `${track.name}.json`; a.click();
+            URL.revokeObjectURL(url);
+            showToast('轨迹已导出');
+          });
+        });
+        clone.querySelectorAll('[data-track-import]').forEach(b => {
+          b.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            document.querySelectorAll('.track-card__dropdown--floating').forEach(d => d.remove());
+            const id = b.dataset.trackImport;
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file'; fileInput.accept = '.json';
+            fileInput.addEventListener('change', () => {
+              const file = fileInput.files[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = () => {
+                try {
+                  const data = JSON.parse(reader.result);
+                  if (!data.waypoints) throw new Error();
+                  data.id = id; data.createdAt = new Date().toISOString();
+                  Storage.saveTrack(data);
+                  this.renderSavedTracks();
+                  showToast('轨迹已导入');
+                } catch (e) { showToast('文件格式不正确'); }
+              };
+              reader.readAsText(file);
+            });
+            fileInput.click();
+          });
+        });
+        clone.querySelectorAll('[data-track-delete]').forEach(b => {
+          b.addEventListener('click', async (ev) => {
+            ev.stopPropagation();
+            document.querySelectorAll('.track-card__dropdown--floating').forEach(d => d.remove());
+            const id = b.dataset.trackDelete;
+            if (!confirm('确定删除该轨迹？')) return;
+            await Storage.deleteTrack(id);
+            this.renderSavedTracks();
+            showToast('轨迹已删除');
+          });
+        });
       });
     });
     document.addEventListener('click', () => {
