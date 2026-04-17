@@ -82,23 +82,27 @@ export const CloudSync = {
     }
   },
 
-  /** 登录后调用：拉取用户数据并与本地合并 */
+  /** 登录后调用：推送本地 → 清理孤立数据 → 认领 → 拉取 */
   async pullUserData() {
     if (!_client || !Auth.getUserId()) return;
     try {
       const userId = Auth.getUserId();
 
+      // 1. 先把本地数据推上去
       await this.pushAllLocal();
 
+      // 2. 清理云端存在但本地不存在的孤立数据（用户之前删掉但没同步的）
+      await this._cleanupOrphanData();
+
+      // 3. 把剩余的无主数据认领为当前用户
+      await this._claimOrphanData(userId);
+
+      // 4. 拉取当前用户的数据
       const [catRes, mkRes, tcRes, trRes] = await Promise.all([
-        _client.from('marker_categories').select('*')
-          .or(`user_id.eq.${userId},user_id.is.null`),
-        _client.from('markers').select('*')
-          .or(`user_id.eq.${userId},user_id.is.null`),
-        _client.from('track_categories').select('*')
-          .or(`user_id.eq.${userId},user_id.is.null`),
-        _client.from('tracks').select('*')
-          .or(`user_id.eq.${userId},user_id.is.null`)
+        _client.from('marker_categories').select('*').eq('user_id', userId),
+        _client.from('markers').select('*').eq('user_id', userId),
+        _client.from('track_categories').select('*').eq('user_id', userId),
+        _client.from('tracks').select('*').eq('user_id', userId)
       ]);
 
       this._mergeToLocal('private_map_categories', catRes.data || []);
@@ -106,12 +110,34 @@ export const CloudSync = {
       this._mergeToLocal('private_map_track_categories', tcRes.data || []);
       this._mergeToLocal('private_map_tracks', (trRes.data || []).map(toLocalTrack));
 
-      // 把无主的旧数据认领为当前用户
-      await this._claimOrphanData(userId);
-
       console.log('[Cloud] 用户数据同步完成');
     } catch (e) {
       console.warn('[Cloud] 用户数据同步失败:', e);
+    }
+  },
+
+  /** 清理云端孤立数据：云端有但本地没有的 → 从云端删除 */
+  async _cleanupOrphanData() {
+    if (!_client) return;
+    try {
+      const localIds = {
+        markers: new Set(JSON.parse(localStorage.getItem('private_map_markers') || '[]').map(m => m.id)),
+        marker_categories: new Set(JSON.parse(localStorage.getItem('private_map_categories') || '[]').map(c => c.id)),
+        track_categories: new Set(JSON.parse(localStorage.getItem('private_map_track_categories') || '[]').map(c => c.id)),
+        tracks: new Set(JSON.parse(localStorage.getItem('private_map_tracks') || '[]').map(t => t.id))
+      };
+
+      const tables = ['markers', 'marker_categories', 'track_categories', 'tracks'];
+      const ops = tables.map(async (table) => {
+        const res = await _client.from(table).select('id').is('user_id', null);
+        const orphanIds = (res.data || []).filter(r => !localIds[table].has(r.id)).map(r => r.id);
+        if (orphanIds.length === 0) return;
+        await _client.from(table).delete().in('id', orphanIds);
+        if (orphanIds.length) console.log(`[Cloud] 清理了 ${table} 中 ${orphanIds.length} 条孤立数据`);
+      });
+      await Promise.all(ops);
+    } catch (e) {
+      console.warn('[Cloud] 清理孤立数据失败:', e);
     }
   },
 
@@ -120,10 +146,10 @@ export const CloudSync = {
     if (!_client) return;
     try {
       await Promise.all([
-        _client.from('marker_categories').update({ user_id: userId }).is('user_id', 'null'),
-        _client.from('markers').update({ user_id: userId }).is('user_id', 'null'),
-        _client.from('track_categories').update({ user_id: userId }).is('user_id', 'null'),
-        _client.from('tracks').update({ user_id: userId }).is('user_id', 'null')
+        _client.from('marker_categories').update({ user_id: userId }).is('user_id', null),
+        _client.from('markers').update({ user_id: userId }).is('user_id', null),
+        _client.from('track_categories').update({ user_id: userId }).is('user_id', null),
+        _client.from('tracks').update({ user_id: userId }).is('user_id', null)
       ]);
     } catch (e) {
       console.warn('[Cloud] 认领旧数据失败:', e);
@@ -168,7 +194,8 @@ export const CloudSync = {
 
   removeMarker(id) {
     if (!_client || !Auth.getUserId()) return;
-    _client.from('markers').delete().eq('id', id).eq('user_id', Auth.getUserId());
+    // 不加 user_id 过滤，RLS 策略会限制只能删自己的或无主数据
+    _client.from('markers').delete().eq('id', id);
   },
 
   // ===== 标记分类 =====
@@ -180,7 +207,7 @@ export const CloudSync = {
 
   removeCategory(id) {
     if (!_client || !Auth.getUserId()) return;
-    _client.from('marker_categories').delete().eq('id', id).eq('user_id', Auth.getUserId());
+    _client.from('marker_categories').delete().eq('id', id);
   },
 
   // ===== 轨迹 =====
@@ -192,7 +219,7 @@ export const CloudSync = {
 
   removeTrack(id) {
     if (!_client || !Auth.getUserId()) return;
-    _client.from('tracks').delete().eq('id', id).eq('user_id', Auth.getUserId());
+    _client.from('tracks').delete().eq('id', id);
   },
 
   // ===== 轨迹分类 =====
@@ -204,7 +231,7 @@ export const CloudSync = {
 
   removeTrackCategory(id) {
     if (!_client || !Auth.getUserId()) return;
-    _client.from('track_categories').delete().eq('id', id).eq('user_id', Auth.getUserId());
+    _client.from('track_categories').delete().eq('id', id);
   },
 
   // ===== 实时订阅 =====
