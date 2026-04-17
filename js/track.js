@@ -350,6 +350,7 @@ export const TrackModule = {
               <div class="track-card__menu-wrap">
                 <button class="track-card__menu-btn" data-track-menu="${t.id}" title="更多">···</button>
                 <div class="track-card__dropdown hidden" data-track-dropdown="${t.id}">
+                  <button class="track-card__dropdown-item" data-track-change-cat="${t.id}">更改分类</button>
                   <button class="track-card__dropdown-item" data-track-export="${t.id}">导出轨迹</button>
                   <button class="track-card__dropdown-item" data-track-import="${t.id}">导入覆盖</button>
                   <button class="track-card__dropdown-item track-card__dropdown-item--danger" data-track-delete="${t.id}">删除轨迹</button>
@@ -422,6 +423,33 @@ export const TrackModule = {
     });
     document.addEventListener('click', () => {
       container.querySelectorAll('.track-card__dropdown').forEach(d => d.classList.add('hidden'));
+    });
+
+    // 更改分类
+    container.querySelectorAll('[data-track-change-cat]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.trackChangeCat;
+        const track = Storage.getTracks().find(t => t.id === id);
+        if (!track) return;
+        const categories = this.getCategories();
+        if (categories.length === 0) {
+          showToast('请先创建轨迹分类');
+          return;
+        }
+        const options = categories.map((c, i) => `${i + 1}. ${c.emoji} ${c.name}`).join('\n');
+        const choice = prompt(`选择分类（输入序号）：\n0. 无分类\n${options}`);
+        if (choice === null) return;
+        const idx = parseInt(choice);
+        if (idx === 0) {
+          track.categoryId = null;
+        } else if (idx >= 1 && idx <= categories.length) {
+          track.categoryId = categories[idx - 1].id;
+        } else return;
+        Storage.saveTrack(track);
+        this.renderSavedTracks();
+        showToast('分类已更新');
+      });
     });
 
     // 导出

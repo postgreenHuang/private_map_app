@@ -56,6 +56,7 @@ async function onLoginSuccess(config) {
   await SearchModule.init();
   TrackModule.loadAll();
   CategoryModule.renderFilterBar();
+  TrackModule.renderTrackFilterBar();
 
   // 实时订阅
   CloudSync.startRealtime({
