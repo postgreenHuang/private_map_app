@@ -450,17 +450,33 @@ export const TrackModule = {
       });
     });
 
-    // 更多菜单
+    // 更多菜单（fixed 定位避免被 overflow 裁切）
     container.querySelectorAll('[data-track-menu]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        container.querySelectorAll('.track-card__dropdown').forEach(d => d.classList.add('hidden'));
+        container.querySelectorAll('.track-card__dropdown').forEach(d => {
+          d.classList.add('hidden');
+          d.style.position = '';
+          d.style.top = '';
+          d.style.left = '';
+        });
         const dropdown = container.querySelector(`[data-track-dropdown="${btn.dataset.trackMenu}"]`);
-        if (dropdown) dropdown.classList.toggle('hidden');
+        if (!dropdown) return;
+        const rect = btn.getBoundingClientRect();
+        dropdown.style.position = 'fixed';
+        dropdown.style.top = rect.top + 'px';
+        dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+        dropdown.style.left = '';
+        dropdown.classList.remove('hidden');
       });
     });
     document.addEventListener('click', () => {
-      container.querySelectorAll('.track-card__dropdown').forEach(d => d.classList.add('hidden'));
+      container.querySelectorAll('.track-card__dropdown').forEach(d => {
+        d.classList.add('hidden');
+        d.style.position = '';
+        d.style.top = '';
+        d.style.left = '';
+      });
     });
 
     // 更改分类

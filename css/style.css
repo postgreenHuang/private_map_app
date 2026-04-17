@@ -621,10 +621,9 @@ body.sidebar-open .search { left: calc(var(--sidebar-width) + 16px); }
 }
 .track-card__menu-btn:active { background: rgba(0,0,0,0.06); }
 .track-card__dropdown {
-  position: absolute; bottom: 100%; right: 0; margin-bottom: 4px;
   background: var(--color-bg); border-radius: var(--radius-sm);
   box-shadow: var(--shadow); min-width: 130px;
-  overflow: hidden; z-index: 10;
+  overflow: hidden; z-index: 300;
 }
 .track-card__dropdown-item {
   display: block; width: 100%; padding: 10px 14px;
