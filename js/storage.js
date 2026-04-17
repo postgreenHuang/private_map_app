@@ -37,10 +37,10 @@ export const Storage = {
     CloudSync.pushMarker(marker);
   },
 
-  deleteMarker(id) {
+  async deleteMarker(id) {
     const markers = this.getMarkers().filter(m => m.id !== id);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(markers));
-    CloudSync.removeMarker(id);
+    await CloudSync.removeMarker(id);
   },
 
   // ========== 导出 ==========
@@ -130,9 +130,9 @@ ${waypoints}
     CloudSync.pushTrack(track);
   },
 
-  deleteTrack(id) {
+  async deleteTrack(id) {
     const tracks = this.getTracks().filter(t => t.id !== id);
     localStorage.setItem('private_map_tracks', JSON.stringify(tracks));
-    CloudSync.removeTrack(id);
+    await CloudSync.removeTrack(id);
   }
 };
