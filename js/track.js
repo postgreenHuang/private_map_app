@@ -80,6 +80,50 @@ export const TrackModule = {
     this.renderSavedTracks();
   },
 
+  // ========== 轨迹分类选择器（下拉弹窗） ==========
+
+  /**
+   * 显示分类选择弹窗，返回 Promise<string|null>（选中的 categoryId 或 null）
+   * @param {string|null} currentCatId - 当前分类 ID
+   */
+  pickCategory(currentCatId = null) {
+    const categories = this.getCategories();
+    const overlay = document.getElementById('track-cat-picker-overlay');
+    const select = document.getElementById('track-cat-picker-select');
+
+    select.innerHTML = `<option value="">无分类</option>` +
+      categories.map(c =>
+        `<option value="${c.id}"${c.id === currentCatId ? ' selected' : ''}>${c.emoji} ${escapeHtml(c.name)}</option>`
+      ).join('');
+
+    overlay.classList.remove('hidden');
+
+    return new Promise((resolve) => {
+      const cleanup = () => {
+        overlay.classList.add('hidden');
+        document.getElementById('track-cat-picker-confirm').removeEventListener('click', onConfirm);
+        document.getElementById('track-cat-picker-cancel').removeEventListener('click', onCancel);
+        overlay.removeEventListener('click', onOverlayClick);
+      };
+      const onConfirm = () => {
+        const val = select.value || null;
+        cleanup();
+        resolve(val);
+      };
+      const onCancel = () => {
+        cleanup();
+        resolve(currentCatId); // 取消时保持原分类
+      };
+      const onOverlayClick = (e) => {
+        if (e.target === overlay) onCancel();
+      };
+
+      document.getElementById('track-cat-picker-confirm').addEventListener('click', onConfirm);
+      document.getElementById('track-cat-picker-cancel').addEventListener('click', onCancel);
+      overlay.addEventListener('click', onOverlayClick);
+    });
+  },
+
   // ========== 轨迹分类管理弹窗 ==========
 
   openCategoryModal() {
@@ -267,14 +311,8 @@ export const TrackModule = {
     // 选择轨迹分类
     const categories = this.getCategories();
     if (categories.length > 0) {
-      const options = categories.map((c, i) => `${i + 1}. ${c.emoji} ${c.name}`).join('\n');
-      const choice = prompt(`选择分类（输入序号，跳过则不分类）：\n${options}`);
-      if (choice) {
-        const idx = parseInt(choice) - 1;
-        if (idx >= 0 && idx < categories.length) {
-          _editingTrack.categoryId = categories[idx].id;
-        }
-      }
+      const chosen = await this.pickCategory(null);
+      if (chosen) _editingTrack.categoryId = chosen;
     }
 
     Storage.saveTrack(_editingTrack);
@@ -427,7 +465,7 @@ export const TrackModule = {
 
     // 更改分类
     container.querySelectorAll('[data-track-change-cat]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const id = btn.dataset.trackChangeCat;
         const track = Storage.getTracks().find(t => t.id === id);
@@ -437,15 +475,8 @@ export const TrackModule = {
           showToast('请先创建轨迹分类');
           return;
         }
-        const options = categories.map((c, i) => `${i + 1}. ${c.emoji} ${c.name}`).join('\n');
-        const choice = prompt(`选择分类（输入序号）：\n0. 无分类\n${options}`);
-        if (choice === null) return;
-        const idx = parseInt(choice);
-        if (idx === 0) {
-          track.categoryId = null;
-        } else if (idx >= 1 && idx <= categories.length) {
-          track.categoryId = categories[idx - 1].id;
-        } else return;
+        const chosen = await this.pickCategory(track.categoryId);
+        track.categoryId = chosen;
         Storage.saveTrack(track);
         this.renderSavedTracks();
         showToast('分类已更新');

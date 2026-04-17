@@ -206,6 +206,18 @@
   <!-- 退出登录按钮（右下角） -->
   <button id="auth-logout-btn" class="auth-logout-btn hidden" title="退出登录">退出</button>
 
+  <!-- 轨迹分类选择弹窗 -->
+  <div id="track-cat-picker-overlay" class="marker-form-overlay hidden">
+    <div class="track-cat-picker">
+      <h2 class="track-cat-picker__title">选择分类</h2>
+      <select id="track-cat-picker-select" class="form-select"></select>
+      <div class="track-cat-picker__actions">
+        <button type="button" id="track-cat-picker-cancel" class="btn btn--secondary">取消</button>
+        <button type="button" id="track-cat-picker-confirm" class="btn btn--primary">确定</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 提示消息 -->
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
