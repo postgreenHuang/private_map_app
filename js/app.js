@@ -48,6 +48,14 @@ async function onLoginSuccess(config) {
   document.getElementById('auth-overlay').classList.add('hidden');
   document.getElementById('auth-logout-btn').classList.remove('hidden');
 
+  // 清空本地缓存，避免上一个账号的数据残留
+  const appKeys = [
+    'private_map_markers', 'private_map_categories',
+    'private_map_track_categories', 'private_map_tracks',
+    'private_map_sidebar_width'
+  ];
+  appKeys.forEach(key => localStorage.removeItem(key));
+
   // 同步用户数据
   await CloudSync.pullUserData();
 
