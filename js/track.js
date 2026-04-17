@@ -450,33 +450,28 @@ export const TrackModule = {
       });
     });
 
-    // 更多菜单（fixed 定位避免被 overflow 裁切）
+    // 更多菜单（挂到 body 上避免被 overflow 裁切）
     container.querySelectorAll('[data-track-menu]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        container.querySelectorAll('.track-card__dropdown').forEach(d => {
-          d.classList.add('hidden');
-          d.style.position = '';
-          d.style.top = '';
-          d.style.left = '';
-        });
+        // 先关闭已打开的
+        document.querySelectorAll('.track-card__dropdown--floating').forEach(d => d.remove());
         const dropdown = container.querySelector(`[data-track-dropdown="${btn.dataset.trackMenu}"]`);
         if (!dropdown) return;
         const rect = btn.getBoundingClientRect();
-        dropdown.style.position = 'fixed';
-        dropdown.style.top = rect.top + 'px';
-        dropdown.style.right = (window.innerWidth - rect.right) + 'px';
-        dropdown.style.left = '';
-        dropdown.classList.remove('hidden');
+        // 克隆到 body 上，避免被父容器裁切
+        const clone = dropdown.cloneNode(true);
+        clone.classList.remove('hidden');
+        clone.classList.add('track-card__dropdown--floating');
+        clone.style.position = 'fixed';
+        clone.style.top = rect.bottom + 4 + 'px';
+        clone.style.right = (window.innerWidth - rect.right) + 'px';
+        clone.style.zIndex = '400';
+        document.body.appendChild(clone);
       });
     });
     document.addEventListener('click', () => {
-      container.querySelectorAll('.track-card__dropdown').forEach(d => {
-        d.classList.add('hidden');
-        d.style.position = '';
-        d.style.top = '';
-        d.style.left = '';
-      });
+      document.querySelectorAll('.track-card__dropdown--floating').forEach(d => d.remove());
     });
 
     // 更改分类
