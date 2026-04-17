@@ -496,6 +496,16 @@ body {
 }
 .auth-card__switch a:hover { text-decoration: underline; }
 
+.auth-logout-btn {
+  position: fixed; bottom: 20px; right: 20px; z-index: 200;
+  padding: 6px 14px; font-size: 13px; font-weight: 500;
+  color: var(--color-text-secondary); background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(60,60,67,0.12); border-radius: 20px;
+  cursor: pointer; transition: all 0.2s;
+}
+.auth-logout-btn:hover { color: var(--color-danger); border-color: rgba(255,59,48,0.3); }
+
 /* ========== 错误提示 ========== */
 .error { display: flex; align-items: center; justify-content: center; height: 100vh; padding: 32px; text-align: center; }
 .error__title { font-size: 18px; font-weight: 600; color: var(--color-danger); margin-bottom: 8px; }

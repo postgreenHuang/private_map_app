@@ -140,8 +140,9 @@ function bindAuthEvents() {
     }
   });
 
-  // 登出
+  // 登出（确认弹窗）
   document.getElementById('auth-logout-btn').addEventListener('click', async () => {
+    if (!confirm('确定要退出登录吗？')) return;
     await Auth.signOut();
     location.reload();
   });

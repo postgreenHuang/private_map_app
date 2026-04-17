@@ -584,7 +584,6 @@ export const TrackModule = {
         <div class="waypoint-item">
           <span class="waypoint-item__num ${dotClass}">${dotText}</span>
           <span class="waypoint-item__name" data-tw-name="${track.id}|${i}">${escapeHtml(wp.name)}</span>
-          <span class="waypoint-item__coords">${wp.lat.toFixed(4)}, ${wp.lng.toFixed(4)}</span>
           <button class="waypoint-item__del" data-tw-del="${track.id}|${i}" title="删除">×</button>
         </div>
         <button class="track-wp__add ${isActive(i + 1) ? 'track-wp__add--active' : ''}" data-tw-insert="${track.id}|${i + 1}" title="在此处插入途径点">+</button>`;
@@ -734,7 +733,6 @@ export const TrackModule = {
         <div class="waypoint-item" data-index="${i}">
           <span class="waypoint-item__num">${i + 1}</span>
           <span class="waypoint-item__name" data-wp-name="${i}">${escapeHtml(wp.name)}</span>
-          <span class="waypoint-item__coords">${wp.lat.toFixed(4)}, ${wp.lng.toFixed(4)}</span>
           <button class="waypoint-item__del" data-wp-del="${i}" title="移除">×</button>
         </div>`)
       .join('');
