@@ -189,9 +189,14 @@ export const CloudSync = {
   // ===== 标记 =====
 
   pushMarker(marker) {
-    if (!_client || !Auth.getUserId()) return;
-    _client.from('markers').upsert(toCloudMarker(marker), { onConflict: 'id' }).then(({ error }) => {
+    const userId = Auth.getUserId();
+    if (!_client) { console.warn('[Cloud] pushMarker 跳过：client 未初始化'); return; }
+    if (!userId) { console.warn('[Cloud] pushMarker 跳过：用户未登录'); return; }
+    const data = toCloudMarker(marker);
+    console.log('[Cloud] pushMarker:', data.id, 'user_id:', userId);
+    _client.from('markers').upsert(data, { onConflict: 'id' }).then(({ error }) => {
       if (error) console.warn('[Cloud] 上传标记失败:', error);
+      else console.log('[Cloud] 上传标记成功:', data.id);
     });
   },
 
