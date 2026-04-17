@@ -190,7 +190,9 @@ export const CloudSync = {
 
   pushMarker(marker) {
     if (!_client || !Auth.getUserId()) return;
-    _client.from('markers').upsert(toCloudMarker(marker), { onConflict: 'id' });
+    _client.from('markers').upsert(toCloudMarker(marker), { onConflict: 'id' }).then(({ error }) => {
+      if (error) console.warn('[Cloud] 上传标记失败:', error);
+    });
   },
 
   removeMarker(id) {
@@ -204,7 +206,9 @@ export const CloudSync = {
 
   pushCategory(category) {
     if (!_client || !Auth.getUserId()) return;
-    _client.from('marker_categories').upsert(toCloudCategory(category), { onConflict: 'id' });
+    _client.from('marker_categories').upsert(toCloudCategory(category), { onConflict: 'id' }).then(({ error }) => {
+      if (error) console.warn('[Cloud] 上传分类失败:', error);
+    });
   },
 
   removeCategory(id) {
@@ -218,7 +222,9 @@ export const CloudSync = {
 
   pushTrack(track) {
     if (!_client || !Auth.getUserId()) return;
-    _client.from('tracks').upsert(toCloudTrack(track), { onConflict: 'id' });
+    _client.from('tracks').upsert(toCloudTrack(track), { onConflict: 'id' }).then(({ error }) => {
+      if (error) console.warn('[Cloud] 上传轨迹失败:', error);
+    });
   },
 
   removeTrack(id) {
@@ -232,7 +238,9 @@ export const CloudSync = {
 
   pushTrackCategory(category) {
     if (!_client || !Auth.getUserId()) return;
-    _client.from('track_categories').upsert(toCloudCategory(category), { onConflict: 'id' });
+    _client.from('track_categories').upsert(toCloudCategory(category), { onConflict: 'id' }).then(({ error }) => {
+      if (error) console.warn('[Cloud] 上传轨迹分类失败:', error);
+    });
   },
 
   removeTrackCategory(id) {
