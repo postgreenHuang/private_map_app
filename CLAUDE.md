@@ -5,7 +5,7 @@
 ## 项目概述
 
 - **项目名称**：私人地图标记工具
-- **当前阶段**：第二阶段（分类版）已完成，待启动第三阶段（同步版）
+- **当前阶段**：第三阶段（同步版+轨迹）进行中
 - **目标平台**：Mac 浏览器 + iPhone 浏览器（Safari）
 - **技术方案**：纯前端网页 App（HTML + JS + 高德 JS API），无需构建工具
 
@@ -14,23 +14,27 @@
 - **地图**：高德 JS API 2.0（Web 端）
 - **语言**：JavaScript（ES6+），不使用 TypeScript
 - **样式**：原生 CSS，移动端优先（Mobile First）
-- **存储**：MVP 阶段用 localStorage，后续考虑 Firebase / GitHub JSON
-- **构建**：无构建工具，直接加载高德 JS API CDN
-- **托管**：GitHub Pages（静态文件直接部署）
+- **存储**：localStorage + Supabase 云端同步（第三阶段）
+- **构建**：无构建工具，直接加载高德 JS API CDN + Supabase CDN
+- **托管**：GitHub Pages（已部署：https://postgreenhuang.github.io/private_map_app/）
 
 ## 项目结构
 
 ```
 /
 ├── index.html          # 主页面
+├── config.json         # 配置文件（API Key、Supabase 等）
 ├── css/
 │   └── style.css       # 全局样式
 ├── js/
 │   ├── app.js          # 应用入口与初始化
 │   ├── map.js          # 地图相关逻辑
 │   ├── marker.js       # 标记增删改查
-│   ├── category.js     # 分类管理（第二阶段）
-│   └── storage.js      # 数据持久化（localStorage / 云端）
+│   ├── category.js     # 标记分类管理
+│   ├── track.js        # 轨迹管理与制作模式
+│   ├── storage.js      # 数据持久化（localStorage / 云端）
+│   ├── cloud.js        # 云端同步模块（Supabase）
+│   └── search.js       # POI 搜索
 ├── assets/             # 图标、图片等静态资源
 └── CLAUDE.md
 ```
@@ -58,15 +62,19 @@
 
 ## 功能开发阶段
 
-1. **MVP**：地图显示、点击添加标记、标记名称/备注、localStorage 存储、标记列表
-2. **分类版**：
+1. **MVP** ✅：地图显示、右键添加标记、标记名称/备注、localStorage 存储、标记列表、POI 搜索
+2. **分类版** ✅：
    - 自定义分类（如：想吃的、想去的、住过的）
-   - 每个分类支持**自定义图标**：可选择 emoji 或上传自定义图片，统一裁剪为标准像素尺寸（如 32×32），在地图标记和分类列表中显示
-   - 每个分类可设置颜色
+   - 每个分类支持 emoji 图标、颜色设置
    - 按分类筛选显示/隐藏标记
    - 标记支持多标签
-3. **同步版**：云端存储、多端同步、数据导出（JSON/GPX/KML）
-4. **进阶功能**：导入 GPX、路线规划、照片附件、分享链接、离线支持
+3. **同步版 + 轨迹**（进行中）：
+   - 轨迹制作：途径点添加、导航路线/直线模式、名称编辑
+   - 轨迹管理：独立分类系统、显示/隐藏、展开编辑途径点
+   - 云端同步：Supabase 存储、多端同步、实时订阅
+   - 部署：GitHub Pages
+   - 移动端适配：长按添加、侧边栏半透明、拖拽调宽、左滑收起
+4. **进阶功能**（待启动）：用户登录、导入 GPX、路线规划、照片附件、分享链接、离线支持
 
 ## 标记数据模型
 
@@ -100,6 +108,42 @@
 }
 ```
 
+## 轨迹数据模型
+
+```js
+{
+  id: "trk_001",
+  name: "北京壁球馆巡游",
+  waypoints: [
+    { lng: 116.xxx, lat: 39.xxx, name: "怦燃壁球" },
+    { lng: 116.xxx, lat: 39.xxx, name: "公园壁球" }
+  ],
+  routeMode: "driving",   // "driving" | "straight"
+  categoryId: "tcat_sport",
+  createdAt: "2026-04-16T..."
+}
+```
+
+## 轨迹分类数据模型
+
+```js
+{
+  id: "tcat_sport",
+  name: "运动",
+  emoji: "🎾",
+  color: "#34C759"
+}
+```
+
+## 云端同步方案
+
+- **服务**：Supabase（BaaS，免费额度充足）
+- **SDK**：@supabase/supabase-js v2（CDN 加载）
+- **数据库表**：markers、marker_categories、track_categories、tracks
+- **同步策略**：localStorage 为主，每次操作同步到云端；页面加载时先推后拉、合并策略（本地不丢失）
+- **实时订阅**：PostgreSQL Changes，其他设备修改时自动刷新 UI
+- **认证**：待实现（计划使用 Supabase Auth 邮箱+密码登录）
+
 ## 决策记录
 
 ### 2026-04-12：确定纯前端方案
@@ -117,14 +161,23 @@
 - **原因**：快速验证核心流程；localStorage 足以支撑个人使用量级
 - **影响**：MVP 阶段无多端同步能力，数据仅存于当前浏览器
 
+### 2026-04-16：选择 Supabase 作为云端存储
+- **决策**：采用 Supabase 作为 BaaS 云端存储方案
+- **原因**：免费额度充足（500MB 数据库、5GB 带宽、50000 月活）；PostgreSQL 数据库可直接查询；内置 Realtime 实时订阅；Auth 认证服务开箱即用；CDN 兼容无需构建工具
+- **影响**：数据存储在 Supabase PostgreSQL，通过 JS SDK CDN 加载；RLS 策略控制访问；多设备打开同一页面可实时同步
+
+### 2026-04-16：部署到 GitHub Pages
+- **决策**：使用 GitHub Pages 托管静态文件
+- **原因**：纯前端项目无服务端需求；免费、自动部署、支持自定义域名；与 GitHub 仓库集成方便版本管理
+- **影响**：仓库需设为 Public；config.json 中的 API Key 为公开信息（均为客户端密钥）
+
 ## 待决策事项
 
 | 问题 | 选项 | 当前倾向 |
 |------|------|---------|
-| 云端存储方案 | Firebase / GitHub JSON / 其他 | 待定 |
-| 是否需要登录 | 登录 / 免登录（URL 访问） | 待定 |
+| 用户登录方案 | Supabase Auth 邮箱+密码 / Magic Link / 第三方 OAuth | 邮箱+密码 |
 | iPhone 快捷入口 | 浏览器书签 / 添加到主屏幕（PWA） | 添加到主屏幕 |
-| 是否支持离线 | 是 / 否 | 待定 |
+| 是否支持离线 | Service Worker 缓存 / 完全离线 / 不支持 | 待定 |
 
 ## 参考资源
 

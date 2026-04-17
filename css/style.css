@@ -634,8 +634,8 @@ body.sidebar-open .search { left: calc(var(--sidebar-width) + 16px); }
   font-size: 12px; font-weight: 600; flex-shrink: 0;
 }
 .waypoint-item__coords {
-  flex: 1; font-size: 13px; color: var(--color-text-secondary);
-  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto; font-size: 11px; color: var(--color-text-secondary);
+  opacity: 0.7; font-variant-numeric: tabular-nums;
 }
 .waypoint-item__del {
   width: 24px; height: 24px; border: none; background: none;
@@ -646,9 +646,11 @@ body.sidebar-open .search { left: calc(var(--sidebar-width) + 16px); }
 }
 .waypoint-item__del:active { background: rgba(255,59,48,0.1); color: var(--color-danger); }
 .waypoint-item__name {
-  flex: 1; font-size: 14px; font-weight: 500;
+  flex: 1; min-width: 0;
+  font-size: 14px; font-weight: 500;
   cursor: pointer; border-radius: 4px; padding: 1px 4px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+  white-space: normal; word-break: break-all;
 }
 .waypoint-item__name:hover { background: rgba(0,0,0,0.04); }
 .waypoint-item__input {

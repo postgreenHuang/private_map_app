@@ -6,6 +6,7 @@
 import { Storage } from './storage.js';
 import { MapModule } from './map.js';
 import { MarkerModule } from './marker.js';
+import { TrackModule } from './track.js';
 
 let _debounceTimer = null;
 let _webApiKey = null;
@@ -160,10 +161,17 @@ export const SearchModule = {
         document.getElementById('search-input').value = poi.name;
       });
 
-      // 右键 POI 标记 → 直接打开添加标记表单，名称默认继承
+      // 右键 POI 标记 → 轨迹模式下添加途径点，否则添加标记
       marker.on('rightclick', () => {
-        MarkerModule.openForm({ lng, lat });
-        document.getElementById('marker-name').value = poi.name;
+        if (TrackModule.isInserting()) {
+          const { trackId, insertIndex } = TrackModule.getInsertTarget();
+          TrackModule.insertWaypoint(trackId, insertIndex, lng, lat);
+        } else if (TrackModule.isEditing()) {
+          TrackModule.addWaypoint(lng, lat);
+        } else {
+          MarkerModule.openForm({ lng, lat });
+          document.getElementById('marker-name').value = poi.name;
+        }
       });
     });
 

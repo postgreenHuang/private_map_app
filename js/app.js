@@ -132,7 +132,11 @@ async function init() {
     const resizeHandle = document.getElementById('sidebar-resize-handle');
     const SIDEBAR_MIN = 200, SIDEBAR_MAX = 500;
     const savedWidth = localStorage.getItem('private_map_sidebar_width');
-    if (savedWidth) sidebar.style.width = Math.min(Math.max(parseInt(savedWidth), SIDEBAR_MIN), SIDEBAR_MAX) + 'px';
+    if (savedWidth) {
+      const w = Math.min(Math.max(parseInt(savedWidth), SIDEBAR_MIN), SIDEBAR_MAX);
+      sidebar.style.width = w + 'px';
+      sidebar.style.setProperty('--sidebar-width', w + 'px');
+    }
 
     let resizing = false;
     const onResizeStart = (e) => {
@@ -147,6 +151,7 @@ async function init() {
       const newWidth = clientX - rect.left;
       if (newWidth >= SIDEBAR_MIN && newWidth <= SIDEBAR_MAX) {
         sidebar.style.width = newWidth + 'px';
+        sidebar.style.setProperty('--sidebar-width', newWidth + 'px');
       }
     };
     const onResizeEnd = () => {
@@ -156,6 +161,7 @@ async function init() {
       document.body.style.webkitUserSelect = '';
       const w = parseInt(sidebar.style.width);
       if (w >= SIDEBAR_MIN && w <= SIDEBAR_MAX) {
+        sidebar.style.setProperty('--sidebar-width', w + 'px');
         localStorage.setItem('private_map_sidebar_width', w);
       }
     };
