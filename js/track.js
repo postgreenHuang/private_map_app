@@ -297,7 +297,7 @@ export const TrackModule = {
     showToast('已取消制作');
   },
 
-  finishEditing() {
+  async finishEditing() {
     if (_tempWaypoints.length < 2) {
       showToast('至少需要 2 个途径点');
       return;
