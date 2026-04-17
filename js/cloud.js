@@ -1,9 +1,12 @@
 /**
  * cloud.js — 云端同步模块（Supabase）
- * 负责数据上云、拉取、实时订阅
+ * 负责数据上云、拉取、实时订阅，按用户隔离
  */
 
+import { Auth } from './auth.js';
+
 let _client = null;
+let _supabaseClient = null;
 
 // ===== 数据转换 =====
 
@@ -13,7 +16,8 @@ function toCloudMarker(m) {
     lng: m.position.lng, lat: m.position.lat,
     city: m.city || '', category_id: m.categoryId || null,
     links: m.links || [], icon: m.icon || '📍',
-    created_at: m.createdAt
+    created_at: m.createdAt,
+    user_id: Auth.getUserId()
   };
 }
 
@@ -33,7 +37,8 @@ function toCloudTrack(t) {
     waypoints: t.waypoints || [],
     route_mode: t.routeMode || 'driving',
     category_id: t.categoryId || null,
-    created_at: t.createdAt
+    created_at: t.createdAt,
+    user_id: Auth.getUserId()
   };
 }
 
@@ -47,38 +52,53 @@ function toLocalTrack(r) {
   };
 }
 
+function toCloudCategory(c) {
+  return {
+    ...c,
+    user_id: Auth.getUserId()
+  };
+}
+
 export const CloudSync = {
   isAvailable() {
     return !!_client;
+  },
+
+  /** 暴露 supabase client 供 Auth 模块使用 */
+  getSupabaseClient() {
+    return _client;
   },
 
   async init(config) {
     if (!config.supabase?.url || !window.supabase) return;
     try {
       const { createClient } = window.supabase;
-      _client = createClient(config.supabase.url, config.supabase.anon_key);
-      await this.pullAll();
-      console.log('[Cloud] 数据同步完成');
+      _supabaseClient = createClient(config.supabase.url, config.supabase.anon_key);
+      _client = _supabaseClient;
+      console.log('[Cloud] Supabase client 已创建');
     } catch (e) {
-      console.warn('[Cloud] 初始化失败，使用本地数据:', e);
+      console.warn('[Cloud] 初始化失败:', e);
       _client = null;
     }
   },
 
-  // ===== 全量拉取 =====
-
-  async pullAll() {
-    if (!_client) return;
+  /** 登录后调用：拉取用户数据并与本地合并 */
+  async pullUserData() {
+    if (!_client || !Auth.getUserId()) return;
     try {
-      // 先把本地数据推上去
+      const userId = Auth.getUserId();
+
       await this.pushAllLocal();
 
-      // 从云端拉取，与本地合并（只添加云端独有的，不覆盖本地已有的）
       const [catRes, mkRes, tcRes, trRes] = await Promise.all([
-        _client.from('marker_categories').select('*'),
-        _client.from('markers').select('*'),
-        _client.from('track_categories').select('*'),
+        _client.from('marker_categories').select('*')
+          .or(`user_id.eq.${userId},user_id.is.null`),
+        _client.from('markers').select('*')
+          .or(`user_id.eq.${userId},user_id.is.null`),
+        _client.from('track_categories').select('*')
+          .or(`user_id.eq.${userId},user_id.is.null`),
         _client.from('tracks').select('*')
+          .or(`user_id.eq.${userId},user_id.is.null`)
       ]);
 
       this._mergeToLocal('private_map_categories', catRes.data || []);
@@ -86,9 +106,27 @@ export const CloudSync = {
       this._mergeToLocal('private_map_track_categories', tcRes.data || []);
       this._mergeToLocal('private_map_tracks', (trRes.data || []).map(toLocalTrack));
 
-      console.log('[Cloud] 数据同步完成');
+      // 把无主的旧数据认领为当前用户
+      await this._claimOrphanData(userId);
+
+      console.log('[Cloud] 用户数据同步完成');
     } catch (e) {
-      console.warn('[Cloud] 同步失败，使用本地数据:', e);
+      console.warn('[Cloud] 用户数据同步失败:', e);
+    }
+  },
+
+  /** 认领无主数据（user_id IS NULL → 设为当前用户） */
+  async _claimOrphanData(userId) {
+    if (!_client) return;
+    try {
+      await Promise.all([
+        _client.from('marker_categories').update({ user_id: userId }).is('user_id', 'null'),
+        _client.from('markers').update({ user_id: userId }).is('user_id', 'null'),
+        _client.from('track_categories').update({ user_id: userId }).is('user_id', 'null'),
+        _client.from('tracks').update({ user_id: userId }).is('user_id', 'null')
+      ]);
+    } catch (e) {
+      console.warn('[Cloud] 认领旧数据失败:', e);
     }
   },
 
@@ -102,11 +140,11 @@ export const CloudSync = {
   },
 
   async pushAllLocal() {
-    if (!_client) return;
+    if (!_client || !Auth.getUserId()) return;
     try {
-      const categories = JSON.parse(localStorage.getItem('private_map_categories') || '[]');
+      const categories = JSON.parse(localStorage.getItem('private_map_categories') || '[]').map(toCloudCategory);
       const markers = JSON.parse(localStorage.getItem('private_map_markers') || '[]').map(toCloudMarker);
-      const trackCats = JSON.parse(localStorage.getItem('private_map_track_categories') || '[]');
+      const trackCats = JSON.parse(localStorage.getItem('private_map_track_categories') || '[]').map(toCloudCategory);
       const tracks = JSON.parse(localStorage.getItem('private_map_tracks') || '[]').map(toCloudTrack);
 
       const ops = [];
@@ -124,60 +162,64 @@ export const CloudSync = {
   // ===== 标记 =====
 
   pushMarker(marker) {
-    if (!_client) return;
+    if (!_client || !Auth.getUserId()) return;
     _client.from('markers').upsert(toCloudMarker(marker), { onConflict: 'id' });
   },
 
   removeMarker(id) {
-    if (!_client) return;
-    _client.from('markers').delete().eq('id', id);
+    if (!_client || !Auth.getUserId()) return;
+    _client.from('markers').delete().eq('id', id).eq('user_id', Auth.getUserId());
   },
 
   // ===== 标记分类 =====
 
   pushCategory(category) {
-    if (!_client) return;
-    _client.from('marker_categories').upsert(category, { onConflict: 'id' });
+    if (!_client || !Auth.getUserId()) return;
+    _client.from('marker_categories').upsert(toCloudCategory(category), { onConflict: 'id' });
   },
 
   removeCategory(id) {
-    if (!_client) return;
-    _client.from('marker_categories').delete().eq('id', id);
+    if (!_client || !Auth.getUserId()) return;
+    _client.from('marker_categories').delete().eq('id', id).eq('user_id', Auth.getUserId());
   },
 
   // ===== 轨迹 =====
 
   pushTrack(track) {
-    if (!_client) return;
+    if (!_client || !Auth.getUserId()) return;
     _client.from('tracks').upsert(toCloudTrack(track), { onConflict: 'id' });
   },
 
   removeTrack(id) {
-    if (!_client) return;
-    _client.from('tracks').delete().eq('id', id);
+    if (!_client || !Auth.getUserId()) return;
+    _client.from('tracks').delete().eq('id', id).eq('user_id', Auth.getUserId());
   },
 
   // ===== 轨迹分类 =====
 
   pushTrackCategory(category) {
-    if (!_client) return;
-    _client.from('track_categories').upsert(category, { onConflict: 'id' });
+    if (!_client || !Auth.getUserId()) return;
+    _client.from('track_categories').upsert(toCloudCategory(category), { onConflict: 'id' });
   },
 
   removeTrackCategory(id) {
-    if (!_client) return;
-    _client.from('track_categories').delete().eq('id', id);
+    if (!_client || !Auth.getUserId()) return;
+    _client.from('track_categories').delete().eq('id', id).eq('user_id', Auth.getUserId());
   },
 
   // ===== 实时订阅 =====
 
   startRealtime(callbacks) {
-    if (!_client) return;
+    if (!_client || !Auth.getUserId()) return;
 
     try {
+      const userId = Auth.getUserId();
       const sub = (table, pullFn, cb) => {
-        _client.channel(`${table}-changes`)
-          .on('postgres_changes', { event: '*', schema: 'public', table }, async () => {
+        _client.channel(`${table}-${userId}`)
+          .on('postgres_changes', {
+            event: '*', schema: 'public', table,
+            filter: `user_id=eq.${userId}`
+          }, async () => {
             try {
               await pullFn();
               cb?.();
@@ -209,9 +251,11 @@ export const CloudSync = {
   // ===== 单表拉取辅助 =====
 
   async _pullTable(table, toLocal, storageKey) {
-    if (!_client) return;
+    if (!_client || !Auth.getUserId()) return;
     try {
-      const res = await _client.from(table).select('*');
+      const userId = Auth.getUserId();
+      const res = await _client.from(table).select('*')
+        .eq('user_id', userId);
       if (res.data) localStorage.setItem(storageKey, JSON.stringify(res.data.map(toLocal)));
     } catch (e) {
       console.warn(`[Cloud] 拉取 ${table} 失败:`, e);
@@ -219,9 +263,11 @@ export const CloudSync = {
   },
 
   async _pullSimpleTable(table, storageKey) {
-    if (!_client) return;
+    if (!_client || !Auth.getUserId()) return;
     try {
-      const res = await _client.from(table).select('*');
+      const userId = Auth.getUserId();
+      const res = await _client.from(table).select('*')
+        .eq('user_id', userId);
       if (res.data) localStorage.setItem(storageKey, JSON.stringify(res.data));
     } catch (e) {
       console.warn(`[Cloud] 拉取 ${table} 失败:`, e);

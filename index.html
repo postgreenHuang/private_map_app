@@ -31,6 +31,7 @@
       </div>
       <div class="sidebar__header-actions">
         <button id="category-manage-btn" class="btn btn--small btn--secondary" title="管理分类">添加分类</button>
+        <button id="auth-logout-btn" class="btn btn--small btn--secondary hidden" title="退出登录">退出</button>
         <button id="sidebar-close" class="sidebar__close" aria-label="关闭标记列表">&times;</button>
       </div>
     </div>
@@ -180,6 +181,30 @@
   <div id="context-menu" class="context-menu hidden">
     <button class="context-menu__item" id="ctx-add-marker">在此添加标记</button>
   </div>
+
+  <!-- 登录/注册弹窗 -->
+  <div id="auth-overlay" class="auth-overlay">
+    <div class="auth-card">
+      <h2 class="auth-card__title">私人地图</h2>
+      <p class="auth-card__subtitle" id="auth-subtitle">登录以同步你的数据</p>
+      <form id="auth-form" class="auth-card__form">
+        <div class="form-group">
+          <input type="email" id="auth-email" class="form-input" placeholder="邮箱地址" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <input type="password" id="auth-password" class="form-input" placeholder="密码（至少 6 位）" required autocomplete="current-password" minlength="6">
+        </div>
+        <div id="auth-error" class="auth-card__error hidden"></div>
+        <button type="submit" id="auth-submit-btn" class="btn btn--primary btn--full">登录</button>
+      </form>
+      <p class="auth-card__switch">
+        <span id="auth-switch-text">没有账号？</span>
+        <a href="#" id="auth-switch-link">注册</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- 登出按钮（侧边栏 header 内） -->
 
   <!-- 提示消息 -->
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
